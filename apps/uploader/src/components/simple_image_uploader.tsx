@@ -163,8 +163,6 @@ export const SimpleImageUploader: React.FC = () => {
     format: string;
   } | null>(null)
   const [originalDimensions, setOriginalDimensions] = useState<{ width: number, height: number } | null>(null)
-  const [isHeicConverted, setIsHeicConverted] = useState(false)
-  const [uploadedUri, setUploadedUri] = useState<string | null>(null)
   const [processingImage, setProcessingImage] = useState(false)
   const [sliderPosition, setSliderPosition] = useState(50)
   const [useSliderComparison, setUseSliderComparison] = useState(true)
@@ -175,11 +173,6 @@ export const SimpleImageUploader: React.FC = () => {
     setTimeout(() => {
       setToast({ visible: false, message: '' });
     }, duration);
-  };
-
-  // Handle slider drag
-  const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSliderPosition(Number(event.target.value));
   };
 
   // Handle mouse move on slider container for touch devices
@@ -228,9 +221,7 @@ export const SimpleImageUploader: React.FC = () => {
     setUploadStatus({ success: true, message: '' })
     setServerStats(null)
     setOriginalDimensions(null)
-    setIsHeicConverted(false)
     setProcessingImage(true)
-    setUploadedUri(null)
 
     try {
       // Save original file info
@@ -257,13 +248,13 @@ export const SimpleImageUploader: React.FC = () => {
 
         if (headerStr.includes('ftyp') && ['mp4', 'qt', 'mov', 'M4V'].some(str => headerStr.includes(str))) {
           throw new Error('Video files cannot be processed. Please upload an image file instead.');
-        } else if (headerStr.includes('RIFF') && headerStr.includes('AVI')) {
+        } if (headerStr.includes('RIFF') && headerStr.includes('AVI')) {
           throw new Error('Video files cannot be processed. Please upload an image file instead.');
-        } else if ([0x1A, 0x45, 0xDF, 0xA3].every((val, i) => fileHeader[i] === val)) {
+        } if ([0x1A, 0x45, 0xDF, 0xA3].every((val, i) => fileHeader[i] === val)) {
           throw new Error('WebM video files cannot be processed. Please upload an image file instead.');
-        } else {
-          throw new Error('File appears to be corrupted or not a valid image format.');
         }
+        throw new Error('File appears to be corrupted or not a valid image format.');
+
       }
 
       // Set original preview
@@ -298,7 +289,6 @@ export const SimpleImageUploader: React.FC = () => {
           const jpegFile = await convertHeicToJpeg(selectedFile, DEFAULT_QUALITY);
           if (jpegFile && jpegFile.size > 0) {
             setPreviewUrl(URL.createObjectURL(jpegFile));
-            setIsHeicConverted(true);
             processedFile = jpegFile;
             showToast('HEIC converted to JPG for display');
           }
@@ -397,11 +387,9 @@ export const SimpleImageUploader: React.FC = () => {
       showToast('Performing direct upload...');
       const response = await uploadImage(fileToUpload);
       const url = response.result?.variants?.[0];
-      const uri = response.result?.id;
 
       if (url) {
         setUploadedUrl(url);
-        setUploadedUri(uri);
 
         // Estimate stats based on client-side knowledge
         if (fileToUpload) {
@@ -416,9 +404,9 @@ export const SimpleImageUploader: React.FC = () => {
         setUploadStatus({ success: true, message: 'Image uploaded successfully' });
         showToast('Image uploaded successfully');
         return true;
-      } else {
-        throw new Error('Upload returned no URL');
       }
+
+      throw new Error('Upload returned no URL');
     } catch (error) {
       console.error('Direct upload failed:', error);
       setUploadStatus({
@@ -472,7 +460,7 @@ export const SimpleImageUploader: React.FC = () => {
         } else {
           // Fallback to URL filename or generate one
           const urlFilename = uploadedUrl.split('/').pop();
-          if (urlFilename && urlFilename.includes('.')) {
+          if (urlFilename?.includes('.')) {
             filename = urlFilename;
           } else {
             filename = `image-${Date.now()}.${serverStats?.format || 'webp'}`;
@@ -534,268 +522,327 @@ export const SimpleImageUploader: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center p-4">
-      {/* File Input */}
-      <div className="form-control w-full max-w-xs">
-        <label className="label">
-          <span className="label-text">Upload Image</span>
-        </label>
-        <input
-          type="file"
-          accept={ACCEPTED_FILE_TYPES}
-          className="file-input file-input-bordered file-input-primary w-full"
-          onChange={handleFileSelect}
-          disabled={isUploading || processingImage}
-        />
-        <label className="label">
-          <span className="label-text-alt">Supported: JPEG, PNG, GIF, WebP, AVIF, HEIC</span>
-        </label>
-      </div>
+    <div className="flex flex-col items-center p-2 sm:p-4 max-w-5xl mx-auto w-full">
+      {/* Container for the entire uploader - card only on larger screens */}
+      <div className="w-full bg-base-100 rounded-lg sm:shadow-xl sm:card">
+        <div className="p-3 sm:p-6 sm:card-body">
+          <h2 className="text-center mx-auto mb-4 sm:mb-6 text-2xl sm:text-3xl font-bold text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <title>Optimized Image Icon</title>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Image Optimizer
+          </h2>
 
-      {/* Enhanced Loading Animation */}
-      {(isUploading || processingImage) && (
-        <div className="card bg-base-100 shadow-xl w-full max-w-md my-4 animate-pulse">
-          <div className="card-body items-center text-center">
-            <div className="flex flex-col items-center">
-              <div className="loading loading-spinner loading-lg text-primary mb-3"></div>
-              <h3 className="font-bold text-lg">
-                {isUploading ? 'Optimizing on server...' : 'Processing image...'}
-              </h3>
-              <p className="text-sm text-base-content/70 mt-2">
-                {isUploading
-                  ? 'Your image is being optimized for best quality and size'
-                  : 'Preparing your image for optimization'}
-              </p>
-              <div className="w-full bg-base-200 rounded-full h-2.5 mt-4">
-                <div className="bg-primary h-2.5 rounded-full w-3/4 animate-[pulse_2s_ease-in-out_infinite]"></div>
+          {/* File Input with drop zone */}
+          <div className="form-control w-full max-w-lg mx-auto">
+            <label className="label pb-2 sm:pb-4" htmlFor="file-input">
+              <span className="label-text text-base sm:text-lg font-medium flex items-center">
+                Choose an image file to compress
+              </span>
+            </label>
+            <label
+              className={`flex flex-col items-center justify-center w-full h-24 sm:h-32 px-2 sm:px-4 transition bg-base-200 border-2 border-base-300 border-dashed rounded-lg appearance-none cursor-pointer hover:border-primary hover:bg-base-300 focus:outline-none ${isUploading || processingImage ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              <div className="flex flex-col items-center justify-center pt-3 pb-4 sm:pt-5 sm:pb-6">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-primary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <title>Upload Icon</title>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="mb-1 text-xs sm:text-sm">
+                  <span className="font-semibold">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-base-content/70">
+                  JPEG, PNG, GIF, WebP, AVIF, HEIC - Max {MAX_FILE_SIZE_MB}MB
+                </p>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {uploadStatus.success === false && (
-        <div className="alert alert-error my-4 w-full max-w-md">
-          <span>{uploadStatus.message || 'Upload failed'}</span>
-        </div>
-      )}
-
-      {/* Image Comparison - Only show when not processing */}
-      {!processingImage && !isUploading && originalFile && previewUrl && uploadedUrl && serverStats && (
-        <div className="w-full max-w-4xl mt-4">
-          <h3 className="text-xl font-bold mb-4 text-center">Image Comparison</h3>
-
-          {/* Comparison view toggle */}
-          <div className="flex justify-center mb-4">
-            <div className="btn-group">
-              <button
-                className={`btn btn-sm ${useSliderComparison ? 'btn-active' : ''}`}
-                onClick={() => setUseSliderComparison(true)}
-              >
-                Slider View
-              </button>
-              <button
-                className={`btn btn-sm ${!useSliderComparison ? 'btn-active' : ''}`}
-                onClick={() => setUseSliderComparison(false)}
-              >
-                Side by Side
-              </button>
-            </div>
-          </div>
-
-          {useSliderComparison ? (
-            <div className="w-full max-w-2xl mx-auto">
-              {/* Simple slider implementation that properly aligns images */}
-              <div
-                className="relative w-full overflow-hidden rounded-lg shadow-xl select-none"
-                style={{ aspectRatio: '1/1' }}
-                onMouseMove={handleMouseMove}
-                onTouchMove={handleTouchMove}
-              >
-                {/* Original image in the background */}
-                <div className="absolute inset-0">
-                  <img
-                    src={previewUrl}
-                    alt="Original"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* Optimized image overlay with clip mask based on slider */}
-                <div
-                  className="absolute inset-0 overflow-hidden"
-                  style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
-                >
-                  <img
-                    src={uploadedUrl}
-                    alt="Optimized"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* Slider divider line */}
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-white cursor-ew-resize z-10"
-                  style={{ left: `${sliderPosition}%` }}
-                >
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-lg z-20 flex items-center justify-center">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M10 8L6 12L10 16M14 8L18 12L14 16" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Labels */}
-                <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-md z-10">
-                  Original
-                </div>
-                <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-md z-10">
-                  Optimized
-                </div>
-              </div>
-
-              {/* Slider control */}
               <input
-                type="range"
-                min="1"
-                max="99"
-                value={sliderPosition}
-                onChange={handleSliderChange}
-                className="range range-primary w-full mt-4"
+                type="file"
+                id="file-input"
+                className="hidden"
+                accept={ACCEPTED_FILE_TYPES}
+                onChange={handleFileSelect}
+                disabled={isUploading || processingImage}
               />
+            </label>
+          </div>
 
-              {/* Stats */}
-              <div className="flex justify-between items-start mt-4">
-                <div className="text-sm">
-                  <h4 className="font-semibold">Original</h4>
-                  <p>Size: {originalSize ? formatBytes(originalSize) : 'N/A'}</p>
-                  <p>Type: {originalFile.type}</p>
-                  {originalDimensions && (
-                    <p>Dimensions: {originalDimensions.width} × {originalDimensions.height}</p>
-                  )}
-                  {isHeicConverted && (
-                    <div className="badge badge-info mt-1">HEIC converted</div>
-                  )}
-                </div>
-                <div className="text-sm text-right">
-                  <h4 className="font-semibold">Optimized</h4>
-                  <p>Size: {formatBytes(serverStats.size)}</p>
-                  <p>Format: {serverStats.format.toUpperCase()}</p>
-                  {serverStats.width > 0 && (
-                    <p>Dimensions: {serverStats.width} × {serverStats.height}</p>
-                  )}
-                  {reductionPercentage() && (
-                    <p className="font-semibold text-success">
-                      Reduction: {reductionPercentage()}%
-                    </p>
-                  )}
+          {/* Status message area */}
+          {uploadStatus.success === false && (
+            <div className="alert alert-error my-4 w-full max-w-lg mx-auto shadow-md text-sm sm:text-base">
+              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24"><title>Error Icon</title><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span>{uploadStatus.message || 'Upload failed'}</span>
+            </div>
+          )}
+
+          {/* Enhanced Loading Animation */}
+          {(isUploading || processingImage) && (
+            <div className="bg-base-200 w-full max-w-lg mx-auto my-4 rounded-lg p-4 sm:p-6 sm:card sm:card-body">
+              <div className="flex flex-col items-center w-full">
+                <div className="loading loading-spinner loading-lg text-primary mb-3" />
+                <h3 className="font-bold text-lg">
+                  {isUploading ? 'Optimizing your image...' : 'Processing image...'}
+                </h3>
+                <p className="text-xs sm:text-sm text-base-content/70 mt-2 max-w-md">
+                  {isUploading
+                    ? 'Your image is being magically compressed while maintaining quality'
+                    : 'Preparing your image for optimal compression'}
+                </p>
+                <div className="w-full bg-base-300 rounded-full h-2.5 mt-6 overflow-hidden">
+                  <div className="bg-primary h-2.5 rounded-full animate-[progress_2s_ease-in-out_infinite]" style={{ width: '75%' }} />
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="flex flex-col lg:flex-row justify-between gap-4">
-              {/* Original Image */}
-              <div className="card bg-base-100 shadow-xl flex-1">
-                <div className="card-body p-4">
-                  <h3 className="card-title text-center">Original Image</h3>
-                  {isHeicConverted && (
-                    <div className="badge badge-info mb-2">HEIC converted to JPG for preview</div>
-                  )}
-                  <figure className="flex flex-col items-center">
-                    <img
-                      src={previewUrl}
-                      alt="Original"
-                      className="rounded-lg max-h-64 object-contain"
-                    />
-                  </figure>
-                  <div className="text-center mt-2">
-                    <p>Size: {originalSize ? formatBytes(originalSize) : 'N/A'}</p>
-                    <p>Type: {originalFile.type}</p>
-                    {originalDimensions && (
-                      <p>Dimensions: {originalDimensions.width} × {originalDimensions.height}</p>
-                    )}
-                  </div>
+          )}
+
+          {/* Image Comparison - Only show when not processing */}
+          {!processingImage && !isUploading && originalFile && previewUrl && uploadedUrl && serverStats && (
+            <div className="w-full mt-3 sm:mt-6">
+              <div className="divider my-1 sm:my-2">
+                <div className="badge badge-primary">Results</div>
+              </div>
+
+              {/* Compression stats summary - more compact on mobile */}
+              <div className="stats stats-vertical sm:stats-horizontal bg-base-100 shadow mb-3 sm:mb-6 w-full overflow-x-auto text-xs sm:text-sm">
+                <div className="stat py-2 sm:py-4">
+                  <div className="text-xs sm:text-sm">Original</div>
+                  <div className="text-sm sm:text-base">{originalSize ? formatBytes(originalSize) : 'N/A'}</div>
+                  <div className="text-xs">{originalFile.type.split('/')[1].toUpperCase()} {originalDimensions && `${originalDimensions.width}×${originalDimensions.height}`}</div>
+                </div>
+
+                <div className="stat py-2 sm:py-4">
+                  <div className="text-xs sm:text-sm">Optimized</div>
+                  <div className="text-sm sm:text-base">{formatBytes(serverStats.size)}</div>
+                  <div className="text-xs">{serverStats.format.toUpperCase()} {serverStats.width > 0 && `${serverStats.width}×${serverStats.height}`}</div>
+                </div>
+
+                <div className="stat py-2 sm:py-4">
+                  <div className="text-xs sm:text-sm">Saved</div>
+                  <div className="text-sm sm:text-base text-primary">{reductionPercentage()}%</div>
+                  <div className="text-primary text-xs">Smaller file</div>
                 </div>
               </div>
 
-              {/* Optimized Image */}
-              <div className="card bg-base-100 shadow-xl flex-1">
-                <div className="card-body p-4">
-                  <h3 className="card-title text-center">Optimized Image</h3>
-                  <figure className="flex flex-col items-center">
-                    <img
-                      src={uploadedUrl}
-                      alt="Optimized"
-                      className="rounded-lg max-h-64 object-contain"
+              {/* Comparison mode selector - simplified and more touch-friendly */}
+              <div className="flex justify-center mb-3 sm:mb-6">
+                <div className="join rounded-lg shadow-sm">
+                  <button
+                    type="button"
+                    className={`join-item btn btn-sm sm:btn-md ${useSliderComparison ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setUseSliderComparison(true)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <title>Slider View</title>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                    </svg>
+                    Slider
+                  </button>
+                  <button
+                    type="button"
+                    className={`join-item btn btn-sm sm:btn-md ${!useSliderComparison ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => setUseSliderComparison(false)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <title>Side by Side View</title>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    Side by Side
+                  </button>
+                </div>
+              </div>
+
+              {useSliderComparison ? (
+                <div className="w-full max-w-4xl mx-auto mb-4">
+                  {/* Image comparison with slider */}
+                  <div
+                    className="relative w-full overflow-hidden rounded-lg shadow-sm sm:shadow-md select-none"
+                    style={{
+                      aspectRatio: originalDimensions ? `${originalDimensions.width}/${originalDimensions.height}` : '1/1',
+                      maxHeight: '60vh'
+                    }}
+                    onMouseMove={handleMouseMove}
+                    onTouchMove={handleTouchMove}
+                  >
+                    {/* Original image in the background */}
+                    <div className="absolute inset-0 bg-base-200 grid place-items-center">
+                      <img
+                        src={previewUrl}
+                        alt="Original"
+                        className="w-full h-full object-contain max-h-[60vh]"
+                      />
+                    </div>
+
+                    {/* Optimized image overlay with clip mask based on slider */}
+                    <div
+                      className="absolute inset-0 bg-base-200 grid place-items-center overflow-hidden"
+                      style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
+                    >
+                      <img
+                        src={uploadedUrl}
+                        alt="Optimized"
+                        className="w-full h-full object-contain max-h-[60vh]"
+                      />
+                    </div>
+
+                    {/* Slider divider line */}
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 sm:w-1 bg-primary cursor-ew-resize z-10"
+                      style={{ left: `${sliderPosition}%` }}
+                    >
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary shadow-md z-20 flex items-center justify-center text-primary-content">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <title>Slider Handle</title>
+                          <path d="M10 8L6 12L10 16M14 8L18 12L14 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Labels */}
+                    <div className="absolute top-1 left-1 sm:top-2 sm:left-2 badge badge-xs sm:badge-sm badge-neutral text-xs z-10">
+                      Original
+                    </div>
+                    <div className="absolute top-1 right-1 sm:top-2 sm:right-2 badge badge-xs sm:badge-sm badge-primary text-xs z-10">
+                      Optimized
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 w-full mb-4">
+                  {/* Original Image - simplified on mobile */}
+                  <div className="bg-base-200 overflow-hidden rounded-lg">
+                    <figure className="px-1 sm:px-2 pt-1 sm:pt-2">
+                      <div className="rounded-lg overflow-hidden bg-base-200 w-full"
+                        style={{
+                          aspectRatio: originalDimensions ? `${originalDimensions.width}/${originalDimensions.height}` : '1/1',
+                          minHeight: '120px',
+                          maxHeight: '50vh'
+                        }}>
+                        <img
+                          src={previewUrl}
+                          alt="Original"
+                          className="w-full h-full object-contain max-h-[50vh]"
+                        />
+                      </div>
+                    </figure>
+                    <div className="p-1 sm:p-2 text-center">
+                      <h3 className="font-medium text-xs sm:text-sm">
+                        Original
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Optimized Image - simplified on mobile */}
+                  <div className="bg-base-200 overflow-hidden rounded-lg">
+                    <figure className="px-1 sm:px-2 pt-1 sm:pt-2">
+                      <div className="rounded-lg overflow-hidden bg-base-200 w-full"
+                        style={{
+                          aspectRatio: originalDimensions ? `${originalDimensions.width}/${originalDimensions.height}` : '1/1',
+                          minHeight: '120px',
+                          maxHeight: '50vh'
+                        }}>
+                        <img
+                          src={uploadedUrl}
+                          alt="Optimized"
+                          className="w-full h-full object-contain max-h-[50vh]"
+                        />
+                      </div>
+                    </figure>
+                    <div className="p-1 sm:p-2 text-center">
+                      <h3 className="font-medium text-xs sm:text-sm">
+                        Optimized
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Download and copy section - more compact on mobile */}
+              <div className="bg-base-100 shadow-sm sm:shadow-md rounded-lg mb-2 sm:mb-4 w-full">
+                <div className="p-2 sm:p-4">
+                  <h3 className="text-sm sm:text-base font-medium mb-2">Image URL</h3>
+                  <div className="join w-full flex-col sm:flex-row">
+                    <input
+                      type="text"
+                      className="input input-sm sm:input-md input-bordered join-item w-full font-mono text-xs mb-1 sm:mb-0"
+                      value={uploadedUrl || ''}
+                      readOnly
                     />
-                  </figure>
-                  <div className="text-center mt-2">
-                    <p>Size: {formatBytes(serverStats.size)}</p>
-                    <p>Format: {serverStats.format.toUpperCase()}</p>
-                    {serverStats.width > 0 && (
-                      <p>Dimensions: {serverStats.width} × {serverStats.height}</p>
-                    )}
-                    {reductionPercentage() && (
-                      <p className="font-semibold text-success">
-                        Reduction: {reductionPercentage()}%
-                      </p>
-                    )}
+                    <button
+                      type="button"
+                      className="btn btn-sm sm:btn-md join-item btn-primary sm:w-auto w-full"
+                      onClick={() => copyToClipboard(uploadedUrl || '')}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <title>Copy Image URL</title>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      Copy
+                    </button>
+                  </div>
+
+                  <div className="flex justify-end gap-2 mt-3">
+                    <button
+                      type="button"
+                      className="btn btn-sm sm:btn-md btn-outline gap-1"
+                      onClick={() => window.open(uploadedUrl, '_blank')}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <title>Open Image</title>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Open
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm sm:btn-md btn-primary gap-1"
+                      onClick={handleDownloadImage}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <title>Download</title>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           )}
         </div>
-      )}
-
-      {/* Upload Result - Only show when not processing */}
-      {!processingImage && !isUploading && uploadedUrl && (
-        <div className="card bg-base-100 shadow-xl my-4 w-full max-w-md">
-          <div className="card-body">
-            {uploadedUri && (
-              <div className="mt-2">
-                <div className="text-sm font-medium mb-1">Image ID:</div>
-                <div className="flex justify-between items-center">
-                  <code className="bg-base-200 p-2 rounded flex-1 overflow-auto">{uploadedUri}</code>
-                  <button
-                    className="btn btn-sm btn-outline ml-2"
-                    onClick={() => copyToClipboard(uploadedUri)}
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-center mt-4 gap-2">
-              <button
-                className="btn btn-outline btn-sm"
-                onClick={() => window.open(uploadedUrl, '_blank')}
-              >
-                Open Image
-              </button>
-              <button
-                className="btn btn-primary btn-sm gap-1"
-                onClick={handleDownloadImage}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Toast notification */}
       {toast.visible && (
-        <div className="toast toast-top toast-end">
-          <div className="alert alert-info">
+        <div className="toast toast-top toast-center">
+          <div className="alert alert-info shadow-lg max-w-xs sm:max-w-md text-xs sm:text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-5 h-5 sm:w-6 sm:h-6"><title>Info</title><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span>{toast.message}</span>
           </div>
         </div>
       )}
+
+      {/* CSS for transparency background pattern - remove checkerboard and add gradient pattern */}
+      <style>
+        {`
+        .bg-gradient-to-r {
+          background-size: 20px 20px;
+          background-image: linear-gradient(
+            45deg,
+            rgba(180, 180, 180, 0.1) 25%,
+            transparent 25%,
+            transparent 75%,
+            rgba(180, 180, 180, 0.1) 75%,
+            rgba(180, 180, 180, 0.1)
+          );
+        }
+        
+        @keyframes progress {
+          0% { width: 0%; }
+          50% { width: 75%; }
+          100% { width: 100%; }
+        }
+        `}
+      </style>
     </div>
   )
 } 

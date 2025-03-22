@@ -4,6 +4,8 @@ import { heicTo } from "heic-to";
 // Import CSP version for Content Security Policy environments
 import { heicTo as heicToCsp } from "heic-to/csp";
 
+const DEFAULT_QUALITY = 75;
+
 // Check if we're in a CSP-restricted environment
 // This is a simple check that can be expanded based on your actual detection needs
 // or made configurable through environment variables
@@ -43,7 +45,8 @@ export type OptimizedImageResult = {
 };
 
 // Base API URL - can be configured based on environment
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL =
+	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export const compressImage = async (
 	file: File,
@@ -70,7 +73,7 @@ export const compressImage = async (
 
 export const convertToWebP = async (
 	file: File,
-	quality: number = 75,
+	quality = DEFAULT_QUALITY,
 ): Promise<File> => {
 	try {
 		const webpBlob = await blobToWebP(file, { quality: quality / 100 });
@@ -204,7 +207,7 @@ export const isHeicOrHeifImage = async (file: File): Promise<boolean> => {
 
 export const convertHeicToJpeg = async (
 	file: File,
-	quality: number = 75,
+	quality = DEFAULT_QUALITY,
 ): Promise<File> => {
 	try {
 		// Skip double-checking - we trust the caller to only send HEIC files
@@ -262,7 +265,7 @@ export const isAvifImage = (file: File): boolean => {
  */
 export const convertAvifToWebP = async (
 	file: File,
-	quality: number = 75,
+	quality = DEFAULT_QUALITY,
 ): Promise<File> => {
 	try {
 		console.log(`Starting AVIF to WebP conversion, file size: ${file.size}`);
