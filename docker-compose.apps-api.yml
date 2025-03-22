@@ -1,6 +1,7 @@
 services:
   image_optimizer_api:
     container_name: image_optimizer_api
+    platform: linux/arm64
     build:
       context: .
       dockerfile: ./Dockerfile.apps-api
