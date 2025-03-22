@@ -3,7 +3,6 @@ FROM oven/bun:latest
 WORKDIR /app
 
 ENV HUSKY=0
-ENV PORT=3000
 
 # Copy dependency files first for better caching
 COPY package.json ./
@@ -16,6 +15,4 @@ RUN bun install
 COPY . .
 
 WORKDIR /app/apps/api
-
-EXPOSE 3000/tcp
 CMD [ "bun", "run", "index.ts" ]
