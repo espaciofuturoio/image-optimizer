@@ -2,6 +2,7 @@ import { cors } from "@elysiajs/cors";
 import { staticPlugin } from "@elysiajs/static";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
+import { vite } from "elysia-vite-server";
 import { uploadRoutes } from "./routes/upload";
 
 const app = new Elysia()
@@ -19,7 +20,7 @@ const app = new Elysia()
 			},
 		}),
 	)
-
+	.use(staticPlugin({ prefix: "/", assets: "./../uploader/dist/" }))
 	// Serve static files from uploads directory
 	.use(
 		staticPlugin({
@@ -29,7 +30,7 @@ const app = new Elysia()
 	)
 	// Add the upload routes
 	.use(uploadRoutes)
-	.get("/", () => "Hello from Elysia API!")
+	// .get("/", () => "Hello from Elysia API!")
 	.listen(3000);
 
 console.log(
