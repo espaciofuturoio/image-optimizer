@@ -1,11 +1,12 @@
 services:
   image_optimizer_api:
+    platform: linux/arm64
     container_name: image_optimizer_api
     build:
       context: .
       dockerfile: ./Dockerfile.apps-api
     ports:
-      - "3100:3100"
+      - "3000:3000"
     environment:
       - NODE_ENV=production
     volumes:

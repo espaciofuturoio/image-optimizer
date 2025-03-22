@@ -17,7 +17,6 @@
 		"@elysiajs/static": "^1.2.0",
 		"@elysiajs/swagger": "^1.2.2",
 		"elysia": "^1.2.25",
-		"elysia-vite-server": "^0.0.1",
 		"heic-to": "^1.1.10",
 		"nanoid": "^5.1.5",
 		"sharp": "^0.33.5",
