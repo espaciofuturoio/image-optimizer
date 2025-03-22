@@ -20,7 +20,7 @@ const app = new Elysia()
 			},
 		}),
 	)
-	.use(staticPlugin({ prefix: "/", assets: "./../uploader/dist/" }))
+	.use(staticPlugin({ prefix: "/", assets: "./public" }))
 	// Serve static files from uploads directory
 	.use(
 		staticPlugin({
