@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-	PORT: z.number().default(3000),
+	PORT: z.string().default("3000"),
 	UPLOAD_DIR: z.string().default("./uploads"),
 	PUBLIC_URL: z.string().default("/uploads"),
 });
