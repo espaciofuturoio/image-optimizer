@@ -1,14 +1,18 @@
-FROM oven/bun:1.2.5
+FROM oven/bun:1.2.5-debian
 
 # Install dependencies required by Sharp
 RUN apt-get update && apt-get install -y \
     build-essential \
+    gcc \
+    g++ \
+    make \
     libvips-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
 ENV HUSKY=0
+ENV SHARP_IGNORE_GLOBAL_LIBVIPS=1
 
 COPY package.json ./
 COPY apps/api/package.json ./apps/api/package.json
@@ -16,8 +20,9 @@ COPY bun.lock ./
 
 # Install dependencies with specific flags for Sharp
 RUN bun install --include=optional
-# Additional step to ensure Sharp is properly installed for linux-arm64
-RUN cd node_modules/sharp && bun install --os=linux --cpu=arm64
+
+# Use npm to specifically install Sharp for ARM64
+RUN npm install --arch=arm64 --platform=linux sharp
 
 COPY apps/api ./apps/api
 WORKDIR /app/apps/api
