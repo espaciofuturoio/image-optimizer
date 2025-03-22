@@ -3,6 +3,37 @@ import { swagger } from "@elysiajs/swagger";
 import { Elysia, file } from "elysia";
 import { uploadRoutes } from "./routes/upload";
 import { ENV } from "./env";
+import { existsSync } from "node:fs";
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
+
+// Clean and build the frontend before starting the server
+try {
+	const publicDir = join(import.meta.dir, "public");
+
+	// Clean the public folder if it exists
+	if (existsSync(publicDir)) {
+		console.log("🧹 Cleaning public folder...");
+		await rm(publicDir, { recursive: true, force: true });
+		console.log("✅ Public folder cleaned successfully");
+	}
+
+	// Build the frontend
+	console.log("🛠️ Building frontend application...");
+	const buildProcess = Bun.spawnSync(["bun", "run", "build:prod"], {
+		cwd: "../uploader",
+		stdout: "inherit",
+		stderr: "inherit",
+	});
+
+	if (buildProcess.exitCode !== 0) {
+		console.error("❌ Frontend build failed");
+	} else {
+		console.log("✅ Frontend build completed successfully");
+	}
+} catch (error) {
+	console.error("❌ Error during build process:", error);
+}
 
 const app = new Elysia()
 	.use(cors())
