@@ -1,6 +1,6 @@
 FROM oven/bun:latest
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
 ENV HUSKY=0
 
@@ -10,7 +10,8 @@ COPY bun.lock ./
 
 RUN bun install
 
-COPY apps/api ./apps/api
+COPY . .
+
 WORKDIR /app/apps/api
 
 EXPOSE 3000/tcp
