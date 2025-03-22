@@ -3,13 +3,16 @@ FROM oven/bun:latest
 WORKDIR /app
 
 ENV HUSKY=0
+ENV PORT=3000
 
+# Copy dependency files first for better caching
 COPY package.json ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY bun.lock ./
 
 RUN bun install
 
+# Copy the entire project
 COPY . .
 
 WORKDIR /app/apps/api

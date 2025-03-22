@@ -18,4 +18,7 @@ This project was created using `bun init` in bun v1.2.5. [Bun](https://bun.sh) i
 
 ```
 COMPOSE_BAKE=true docker-compose -f docker-compose.apps-api.yml up -d --build
+
+## TEST prod
+docker-compose -f docker-compose.production.yml up --build
 ```
