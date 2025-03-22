@@ -4,8 +4,9 @@ import { Elysia, file } from "elysia";
 import { uploadRoutes } from "./routes/upload";
 import { ENV } from "./env";
 import { existsSync } from "node:fs";
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
+import { rm, mkdir, cp } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { exec } from "node:child_process";
 
 // Clean and build the frontend before starting the server
 try {
@@ -18,21 +19,74 @@ try {
 		console.log("✅ Public folder cleaned successfully");
 	}
 
-	// Build the frontend
-	console.log("🛠️ Building frontend application...");
-	const buildProcess = Bun.spawnSync(["bun", "run", "build:prod"], {
-		cwd: "../uploader",
-		stdout: "inherit",
-		stderr: "inherit",
-	});
+	// Create public directory if it doesn't exist
+	if (!existsSync(publicDir)) {
+		console.log("📁 Creating public directory...");
+		await mkdir(publicDir, { recursive: true });
+	}
 
-	if (buildProcess.exitCode !== 0) {
-		console.error("❌ Frontend build failed");
+	// Check if we're running in a container
+	const isContainer = process.env.CONTAINER === "true";
+
+	if (isContainer) {
+		// In container: check if pre-built files exist in a mounted volume
+		const prebuiltDir = process.env.PREBUILT_DIR || "/prebuilt";
+
+		if (existsSync(prebuiltDir)) {
+			console.log(`📦 Using pre-built frontend from ${prebuiltDir}`);
+			await cp(prebuiltDir, publicDir, { recursive: true });
+			console.log("✅ Frontend files copied successfully");
+		} else {
+			console.log("⚠️ Running in container without pre-built files");
+			console.log(
+				"❗ Please mount a volume with pre-built frontend files to /prebuilt",
+			);
+		}
 	} else {
-		console.log("✅ Frontend build completed successfully");
+		// Not in container: try to build using local commands
+		console.log("🛠️ Building frontend application...");
+
+		const uploaderDir = resolve(import.meta.dir, "../uploader");
+
+		// Use a more flexible command execution approach
+		const buildCmd =
+			process.platform === "win32"
+				? "cd ../uploader && npm run build:prod"
+				: "cd ../uploader && npm run build:prod";
+
+		await new Promise((resolve, reject) => {
+			exec(buildCmd, { cwd: import.meta.dir }, (error, stdout, stderr) => {
+				if (error) {
+					console.error(`❌ Build error: ${error.message}`);
+					console.log("🔍 Attempting fallback build...");
+
+					// Try fallback with npx
+					exec(
+						"cd ../uploader && npx vite build --outDir ../api/public",
+						{ cwd: import.meta.dir },
+						(fallbackError, fallbackStdout, fallbackStderr) => {
+							if (fallbackError) {
+								console.error(
+									`❌ Fallback build failed: ${fallbackError.message}`,
+								);
+								// Continue execution despite error
+								resolve(null);
+							} else {
+								console.log("✅ Fallback build completed successfully");
+								resolve(null);
+							}
+						},
+					);
+				} else {
+					console.log("✅ Frontend build completed successfully");
+					resolve(null);
+				}
+			});
+		});
 	}
 } catch (error) {
 	console.error("❌ Error during build process:", error);
+	// Continue with server startup despite build errors
 }
 
 const app = new Elysia()
