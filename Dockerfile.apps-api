@@ -12,7 +12,7 @@ COPY bun.lock ./
 RUN bun install
 
 # Copy the entire project
-COPY . .
+COPY apps/api ./apps/api
 
 WORKDIR /app/apps/api
 CMD [ "bun", "run", "index.ts" ]

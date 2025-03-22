@@ -1,7 +1,6 @@
 import { cors } from "@elysiajs/cors";
-import { staticPlugin } from "@elysiajs/static";
 import { swagger } from "@elysiajs/swagger";
-import { Elysia } from "elysia";
+import { Elysia, file } from "elysia";
 import { uploadRoutes } from "./routes/upload";
 import { ENV } from "./env";
 
@@ -10,6 +9,7 @@ const app = new Elysia()
 	.use(
 		swagger({
 			exclude: ["/docs", "/docs/JSON"],
+			path: "/docs",
 			excludeTags: ["default"],
 			documentation: {
 				info: {
@@ -20,16 +20,12 @@ const app = new Elysia()
 			},
 		}),
 	)
-	.use(staticPlugin({ prefix: "/", assets: "./public" }))
-	// Serve static files from uploads directory
-	.use(
-		staticPlugin({
-			assets: "./uploads", // The directory containing uploaded files
-			prefix: "/uploads", // The URL prefix to access these files
-		}),
-	)
 	.use(uploadRoutes)
 	.get("/ping", () => "Hello from Image Optimizer API!")
+	.get("/", () => Bun.file("public/index.html"))
+	.get("/vite.svg", () => Bun.file("public/vite.svg"))
+	.get("/assets/*", ({ params }) => file(`public/assets/${params["*"]}`))
+	.get("/uploads/*", ({ params }) => file(`uploads/${params["*"]}`))
 	.listen(ENV.PORT);
 
 console.log(

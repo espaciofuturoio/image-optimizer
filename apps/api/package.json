@@ -14,7 +14,6 @@
 	},
 	"dependencies": {
 		"@elysiajs/cors": "^1.2.0",
-		"@elysiajs/static": "^1.2.0",
 		"@elysiajs/swagger": "^1.2.2",
 		"elysia": "^1.2.25",
 		"heic-to": "^1.1.10",
