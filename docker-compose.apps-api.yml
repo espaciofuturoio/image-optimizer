@@ -1,0 +1,18 @@
+services:
+  image_optimizer_api:
+    container_name: image_optimizer_api
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: ./Dockerfile.apps-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - .:/app
+    networks:
+      - image_optimizer_network
+networks:
+  image_optimizer_network:
+    name: image_optimizer_network

@@ -1,0 +1,3 @@
+# Favicon
+
+https://realfavicongenerator.net/

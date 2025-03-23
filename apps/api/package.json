@@ -1,0 +1,25 @@
+{
+	"name": "api",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "bun run --watch index.ts",
+		"start": "bun run index.ts"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@elysiajs/cors": "^1.2.0",
+		"@elysiajs/swagger": "^1.2.2",
+		"elysia": "^1.2.25",
+		"heic-to": "^1.1.10",
+		"nanoid": "^5.1.5",
+		"sharp": "^0.33.5",
+		"zod": "^3.24.2"
+	}
+}
