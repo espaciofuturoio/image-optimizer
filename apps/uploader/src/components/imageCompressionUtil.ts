@@ -46,7 +46,7 @@ export type OptimizedImageResult = {
 
 // Base API URL - can be configured based on environment
 const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+	import.meta.env.VITE_API_BASE_URL || "https://tinyimage.rubenabix.com";
 
 export const compressImage = async (
 	file: File,
