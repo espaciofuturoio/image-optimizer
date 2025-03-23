@@ -4,7 +4,9 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"dev": "bun run --watch index.ts",
+		"dev:api": "bun run --watch index.ts",
+		"build:fe": "rm -rf public && cd ../uploader && bunx vite build --outDir ../api/public && cd ../api",
+		"dev": "bun run build:fe && bun run dev:api",
 		"start": "bun run index.ts"
 	},
 	"devDependencies": {
