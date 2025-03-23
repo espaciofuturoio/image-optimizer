@@ -8,7 +8,7 @@ import {
   convertHeicToJpeg,
   isAvifImage,
   convertAvifToWebP,
-} from './imageCompressionUtil'
+} from './image_compression_util'
 
 // Define accepted file types
 const ACCEPTED_FILE_TYPES = "image/jpeg,image/png,image/gif,image/webp,image/avif,image/heic,image/heif"

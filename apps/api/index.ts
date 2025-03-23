@@ -25,6 +25,9 @@ const app = new Elysia()
 	.get("/", () => Bun.file("public/index.html"))
 	.get("/assets/*", ({ params }) => file(`public/assets/${params["*"]}`))
 	.get("/uploads/*", ({ params }) => file(`uploads/${params["*"]}`))
+	.get("/image-optimizer-preview.webp", () =>
+		Bun.file("public/image-optimizer-preview.webp"),
+	)
 	.listen(ENV.PORT);
 
 console.log(
