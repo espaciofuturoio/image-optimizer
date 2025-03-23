@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { uploadImage } from './upload'
 import {
   compressImage,
@@ -449,11 +449,12 @@ export const SimpleImageUploader: React.FC = () => {
     }
   };
 
-  // Calculate reduction percentage
-  const reductionPercentage = () => {
+  const reductionPercentage = useMemo(() => {
     if (!originalSize || !serverStats) return null;
-    return ((originalSize - serverStats.size) / originalSize * 100).toFixed(1);
-  }
+    const percentage = ((originalSize - serverStats.size) / originalSize * 100).toFixed(1);
+    console.log(`Reduction percentage: ${percentage}`);
+    return percentage;
+  }, [originalSize, serverStats]);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -761,23 +762,33 @@ export const SimpleImageUploader: React.FC = () => {
               </div>
 
               {/* Compression stats summary - more compact on mobile */}
-              <div className="stats stats-vertical sm:stats-horizontal bg-base-100 shadow mb-3 sm:mb-6 w-full overflow-x-auto text-xs sm:text-sm">
-                <div className="stat py-2 sm:py-4">
-                  <div className="text-xs sm:text-sm">Original</div>
-                  <div className="text-sm sm:text-base">{originalSize ? formatBytes(originalSize) : 'N/A'}</div>
-                  <div className="text-xs">{originalFile.type.split('/')[1].toUpperCase()} {originalDimensions && `${originalDimensions.width}×${originalDimensions.height}`}</div>
+              <div className="stats stats-vertical sm:stats-horizontal bg-base-100 shadow-lg mb-4 sm:mb-6 w-full overflow-x-auto text-xs sm:text-sm">
+                <div className="stat py-3 sm:py-5">
+                  <div className="stat-title text-xs sm:text-sm font-medium opacity-80">Original</div>
+                  <div className="stat-value text-base sm:text-lg">{originalSize ? formatBytes(originalSize) : 'N/A'}</div>
+                  <div className="text-xs opacity-70">{originalFile.type.split('/')[1].toUpperCase()} {originalDimensions && `${originalDimensions.width}×${originalDimensions.height}`}</div>
                 </div>
 
-                <div className="stat py-2 sm:py-4">
-                  <div className="text-xs sm:text-sm">Optimized</div>
-                  <div className="text-sm sm:text-base">{formatBytes(serverStats.size)}</div>
-                  <div className="text-xs">{serverStats.format.toUpperCase()} {serverStats.width > 0 && `${serverStats.width}×${serverStats.height}`}</div>
+                <div className="stat py-3 sm:py-5">
+                  <div className="stat-title text-xs sm:text-sm font-medium opacity-80">Optimized</div>
+                  <div className="stat-value text-base sm:text-lg">{formatBytes(serverStats.size)}</div>
+                  <div className="text-xs opacity-70">{serverStats.format.toUpperCase()} {serverStats.width > 0 && `${serverStats.width}×${serverStats.height}`}</div>
                 </div>
 
-                <div className="stat py-2 sm:py-4">
-                  <div className="text-xs sm:text-sm">Saved</div>
-                  <div className="text-sm sm:text-base text-primary">{reductionPercentage()}%</div>
-                  <div className="text-primary text-xs">Smaller file</div>
+                <div className="stat py-3 sm:py-5 rounded-lg">
+                  <div className="stat-title text-xs sm:text-sm font-medium opacity-90">Saved</div>
+                  <div className="flex justify-center">
+                    <div className="stat-value text-lg sm:text-2xl font-bold badge badge-primary">{reductionPercentage}%</div>
+                  </div>
+                  <div className="text-xs sm:text-sm font-medium">
+                    <span className="inline-flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <title>File Size Reduction</title>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                      </svg>
+                      {reductionPercentage && reductionPercentage > 0 ? ` ${reductionPercentage}% smaller` : 'No reduction'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -978,29 +989,6 @@ export const SimpleImageUploader: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* CSS for transparency background pattern - remove checkerboard and add gradient pattern */}
-      <style>
-        {`
-        .bg-gradient-to-r {
-          background-size: 20px 20px;
-          background-image: linear-gradient(
-            45deg,
-            rgba(180, 180, 180, 0.1) 25%,
-            transparent 25%,
-            transparent 75%,
-            rgba(180, 180, 180, 0.1) 75%,
-            rgba(180, 180, 180, 0.1)
-          );
-        }
-        
-        @keyframes progress {
-          0% { width: 0%; }
-          50% { width: 75%; }
-          100% { width: 100%; }
-        }
-        `}
-      </style>
     </div>
   )
 }
