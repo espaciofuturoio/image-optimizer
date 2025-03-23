@@ -211,6 +211,7 @@ export const convertHeicToJpeg = async (
 		// heic-convert/browser uses native browser capabilities for conversion
 		// It takes an ArrayBuffer and returns a converted Buffer
 		const jpegBuffer = await convert({
+			// @ts-ignore
 			buffer: new Uint8Array(arrayBuffer),
 			format: "JPEG",
 			quality: quality / 100,
