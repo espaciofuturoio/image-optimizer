@@ -147,7 +147,14 @@ const isValidImageHeader = (header: Uint8Array): boolean => {
   return false;
 };
 
-export const SimpleImageUploader: React.FC = () => {
+interface SimpleImageUploaderProps {
+  onClientSide?: boolean;
+}
+
+export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({ onClientSide = true }) => {
+  console.log('SimpleImageUploader component rendering, onClientSide:', onClientSide);
+
+  // Only initialize state if on client side to avoid hydration mismatch
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState<boolean>(false)
@@ -171,6 +178,28 @@ export const SimpleImageUploader: React.FC = () => {
   const [selectedFormat, setSelectedFormat] = useState<Format>('webp')
   const [previousFormat, setPreviousFormat] = useState<Format>('webp')
   const latestSelectedFormat = useRef<Format>(selectedFormat)
+
+  // Server-side rendering placeholder
+  if (!onClientSide) {
+    return (
+      <div className="image-uploader server-version">
+        <div className="uploader-container">
+          <div className="upload-area">
+            <div className="upload-placeholder">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <title>Upload Icon</title>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <h3>Upload Image</h3>
+              <p>Drag & drop or click to select</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Simple toast notification system - make stable with useCallback
   const showToast = useCallback((message: string, duration = 3000) => {
@@ -786,7 +815,7 @@ export const SimpleImageUploader: React.FC = () => {
                         <title>File Size Reduction</title>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
                       </svg>
-                      {reductionPercentage && reductionPercentage > 0 ? ` ${reductionPercentage}% smaller` : 'No reduction'}
+                      {reductionPercentage && Number.parseFloat(reductionPercentage) > 0 ? ` ${reductionPercentage}% smaller` : 'No reduction'}
                     </span>
                   </div>
                 </div>

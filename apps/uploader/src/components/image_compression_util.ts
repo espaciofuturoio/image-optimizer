@@ -3,6 +3,7 @@ import { blobToWebP } from "webp-converter-browser";
 import { heicTo } from "heic-to";
 // Import CSP version for Content Security Policy environments
 import { heicTo as heicToCsp } from "heic-to/csp";
+import { API_BASE_URL } from "./constants";
 
 const DEFAULT_QUALITY = 75;
 
@@ -43,10 +44,6 @@ export type OptimizedImageResult = {
 	compressionRatio?: number;
 	originalSize?: number;
 };
-
-// Base API URL - can be configured based on environment
-const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || "https://tinyimage.rubenabix.com";
 
 export const compressImage = async (
 	file: File,
