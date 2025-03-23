@@ -13,3 +13,8 @@ helm-charts
 .editorconfig
 .idea
 coverage*
+
+apps/api/public
+apps/uploader/dist
+apps/uploader/node_modules
+apps/api/node_modules

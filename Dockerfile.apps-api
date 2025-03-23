@@ -16,5 +16,9 @@ RUN bun install
 COPY apps/api ./apps/api
 COPY apps/uploader ./apps/uploader
 
+# Build the frontend and output to the API's public folder
+WORKDIR /app/apps/uploader
+RUN bunx vite build --outDir ../api/public
+
 WORKDIR /app/apps/api
 CMD [ "bun", "run", "index.ts" ]
