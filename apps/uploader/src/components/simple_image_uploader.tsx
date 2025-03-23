@@ -10,15 +10,17 @@ import {
   convertAvifToWebP,
 } from './image_compression_util'
 
+type Format = 'webp' | 'avif' | 'jpeg' | 'png'
+
 // Define accepted file types
 const ACCEPTED_FILE_TYPES = "image/jpeg,image/png,image/gif,image/webp,image/avif,image/heic,image/heif"
 const ACCEPTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.heic', '.heif']
+const ACCEPTED_FORMATS: Format[] = ['webp', 'avif', 'jpeg', 'png']
 
 // Default configuration values
 const DEFAULT_QUALITY = 75
 const DEFAULT_MAX_SIZE_MB = 1
 const DEFAULT_MAX_RESOLUTION = 2048
-const DEFAULT_FORMAT = 'webp'
 const MAX_FILE_SIZE_MB = 40 // 40MB file size limit
 
 // Utility function to format bytes into KB and MB
@@ -166,6 +168,7 @@ export const SimpleImageUploader: React.FC = () => {
   const [processingImage, setProcessingImage] = useState(false)
   const [sliderPosition, setSliderPosition] = useState(50)
   const [useSliderComparison, setUseSliderComparison] = useState(true)
+  const [selectedFormat, setSelectedFormat] = useState<Format>('webp')
 
   // Simple toast notification system
   const showToast = (message: string, duration = 3000) => {
@@ -315,7 +318,7 @@ export const SimpleImageUploader: React.FC = () => {
         }
       }
       // Apply WebP conversion for non-AVIF files
-      else if (DEFAULT_FORMAT === 'webp') {
+      else if (selectedFormat === 'webp') {
         try {
           clientProcessedFile = await convertToWebP(processedFile, DEFAULT_QUALITY);
         } catch (webpError) {
@@ -342,7 +345,7 @@ export const SimpleImageUploader: React.FC = () => {
       try {
         // Use server-side optimization
         const result = await optimizeImageServer(clientProcessedFile, {
-          format: DEFAULT_FORMAT as 'webp' | 'avif' | 'jpeg' | 'png',
+          format: selectedFormat as 'webp' | 'avif' | 'jpeg' | 'png',
           quality: DEFAULT_QUALITY,
           width: DEFAULT_MAX_RESOLUTION,
           height: undefined,
@@ -533,6 +536,77 @@ export const SimpleImageUploader: React.FC = () => {
             </svg>
             Image Optimizer
           </h2>
+
+          {/* Format selector */}
+          <div className="form-control w-full max-w-lg mx-auto mb-4">
+            <label className="label pb-2" htmlFor="format-select">
+              <span className="label-text text-base font-medium flex items-center">
+                Output format
+              </span>
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {ACCEPTED_FORMATS.map(format => (
+                <label
+                  key={format}
+                  className={`flex flex-col items-center justify-center p-3 border-2 rounded-lg cursor-pointer transition-all ${selectedFormat === format
+                    ? 'border-primary bg-primary/10 shadow-sm'
+                    : 'border-base-300 hover:border-primary/50 hover:bg-base-200'
+                    } ${isUploading || processingImage ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    className="hidden"
+                    name="format"
+                    value={format}
+                    checked={selectedFormat === format}
+                    onChange={() => setSelectedFormat(format)}
+                    disabled={isUploading || processingImage}
+                  />
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 mb-2 flex items-center justify-center text-primary">
+                      {format === 'webp' && (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <title>WebP Format</title>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 1-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+                        </svg>
+                      )}
+                      {format === 'avif' && (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <title>AVIF Format</title>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                        </svg>
+                      )}
+                      {format === 'jpeg' && (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <title>JPEG Format</title>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                      )}
+                      {format === 'png' && (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                          <title>PNG Format</title>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="font-medium text-sm uppercase">{format}</span>
+                    <span className="text-xs mt-1 text-base-content/70 text-center">
+                      {format === 'webp' && 'Best balance'}
+                      {format === 'avif' && 'Smallest size'}
+                      {format === 'jpeg' && 'Compatible'}
+                      {format === 'png' && 'Lossless'}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="text-xs text-base-content/70 mt-2 px-1">
+              {selectedFormat === 'webp' && 'Modern format with good compression and quality, supported by most browsers'}
+              {selectedFormat === 'avif' && 'Next-gen format with excellent compression, but less browser support'}
+              {selectedFormat === 'jpeg' && 'Standard format supported everywhere, best for photos'}
+              {selectedFormat === 'png' && 'Lossless format preserves all details, larger file size, good for graphics'}
+            </div>
+          </div>
 
           {/* File Input with drop zone */}
           <div className="form-control w-full max-w-lg mx-auto">
