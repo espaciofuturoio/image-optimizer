@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { uploadImage } from './upload'
 import {
   compressImage,
@@ -169,14 +169,33 @@ export const SimpleImageUploader: React.FC = () => {
   const [sliderPosition, setSliderPosition] = useState(50)
   const [useSliderComparison, setUseSliderComparison] = useState(true)
   const [selectedFormat, setSelectedFormat] = useState<Format>('webp')
+  const [previousFormat, setPreviousFormat] = useState<Format>('webp')
+  const latestSelectedFormat = useRef<Format>(selectedFormat)
 
-  // Simple toast notification system
-  const showToast = (message: string, duration = 3000) => {
+  // Simple toast notification system - make stable with useCallback
+  const showToast = useCallback((message: string, duration = 3000) => {
     setToast({ visible: true, message });
     setTimeout(() => {
       setToast({ visible: false, message: '' });
     }, duration);
-  };
+  }, []);
+
+  // Process file - wrapped with useCallback to avoid dependency cycles
+  const processFile = useCallback((file: File) => {
+    if (file) {
+      // Show processing state
+      setProcessingImage(true);
+
+      // Reset stats before reprocessing
+      setServerStats(null);
+
+      // Clear the uploaded URL to force image refresh when format changes
+      setUploadedUrl(null);
+
+      // Process with the current format
+      processAndUploadFile(file);
+    }
+  }, []);
 
   // Handle mouse move on slider container for touch devices
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -340,12 +359,16 @@ export const SimpleImageUploader: React.FC = () => {
 
       // Send to server for optimization
       setIsUploading(true);
-      showToast('Uploading to server for optimization...');
+      // Use the ref to get the latest selected format
+      const currentFormat = latestSelectedFormat.current;
+      showToast(`Uploading to server for ${currentFormat.toUpperCase()} optimization...`);
 
       try {
-        // Use server-side optimization
+        console.log(`Optimizing image to ${currentFormat} format (using ref for latest value)`);
+
+        // Use server-side optimization with the current selected format
         const result = await optimizeImageServer(clientProcessedFile, {
-          format: selectedFormat as 'webp' | 'avif' | 'jpeg' | 'png',
+          format: currentFormat,
           quality: DEFAULT_QUALITY,
           width: DEFAULT_MAX_RESOLUTION,
           height: undefined,
@@ -353,7 +376,11 @@ export const SimpleImageUploader: React.FC = () => {
           sourceFormat: processedFile.type.split('/')[1] || undefined
         });
 
+        console.log(`Server API call completed with format=${currentFormat}, returned format=${result.format}`);
+
         if (result.success) {
+          console.log(`Server optimization successful: ${result.format} format, ${result.size} bytes`);
+
           // Save the detailed image info
           setServerStats({
             size: result.size,
@@ -364,8 +391,9 @@ export const SimpleImageUploader: React.FC = () => {
 
           setUploadedUrl(result.url);
           setUploadStatus({ success: true, message: 'Image optimized and uploaded successfully' });
-          showToast('Image upload complete!');
+          showToast(`${result.format.toUpperCase()} conversion complete!`);
         } else {
+          console.error('Server optimization failed:', result.error);
           // Try direct upload as fallback
           await directUpload(clientProcessedFile);
         }
@@ -524,6 +552,62 @@ export const SimpleImageUploader: React.FC = () => {
     }
   };
 
+  // When selectedFormat changes, update the ref
+  useEffect(() => {
+    latestSelectedFormat.current = selectedFormat;
+  }, [selectedFormat]);
+
+  // Format change handler
+  const handleFormatChange = useCallback((format: Format) => {
+    if (originalFile) {
+      console.log(`Format change requested: ${selectedFormat} -> ${format}`);
+
+      // Set processing state to show loading indicators
+      setProcessingImage(true);
+      setIsUploading(true);
+
+      // Clear previous image URL and stats to ensure UI refreshes
+      setUploadedUrl(null);
+      setServerStats(null);
+
+      // Update the selected format immediately
+      setSelectedFormat(format);
+      // Also update the ref
+      latestSelectedFormat.current = format;
+
+      // Clear previous stats when reprocessing
+      if (format === previousFormat) {
+        // If clicking the same format, still reprocess
+        console.log(`Refreshing same format: ${format}`);
+        showToast(`Refreshing ${format.toUpperCase()} format...`);
+      } else {
+        setPreviousFormat(format);
+        console.log(`Converting to new format: ${format}`);
+        showToast(`Converting to ${format.toUpperCase()} format...`);
+      }
+
+      // Do this with a slight delay to allow the UI to update
+      setTimeout(() => {
+        console.log(`Processing file with format: ${format}`);
+        processFile(originalFile);
+      }, 50);
+    } else if (format !== selectedFormat) {
+      // Just update the format if no file is loaded
+      console.log(`No file loaded, just updating format preference to: ${format}`);
+      setSelectedFormat(format);
+    }
+  }, [originalFile, selectedFormat, previousFormat, processFile, showToast]);
+
+  // Re-process image when format changes
+  useEffect(() => {
+    // Since we're handling format changes directly in the handleFormatChange function,
+    // we don't need to reprocess here again. This effect should only update previousFormat
+    // for tracking purposes.
+    if (selectedFormat !== previousFormat) {
+      setPreviousFormat(selectedFormat);
+    }
+  }, [selectedFormat, previousFormat]);
+
   return (
     <div className="flex flex-col items-center p-2 sm:p-4 max-w-5xl mx-auto w-full">
       {/* Container for the entire uploader - card only on larger screens */}
@@ -559,7 +643,7 @@ export const SimpleImageUploader: React.FC = () => {
                     name="format"
                     value={format}
                     checked={selectedFormat === format}
-                    onChange={() => setSelectedFormat(format)}
+                    onChange={() => handleFormatChange(format)}
                     disabled={isUploading || processingImage}
                   />
                   <div className="flex flex-col items-center">
@@ -919,4 +1003,4 @@ export const SimpleImageUploader: React.FC = () => {
       </style>
     </div>
   )
-} 
+}

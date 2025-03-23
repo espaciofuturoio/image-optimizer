@@ -118,6 +118,12 @@ export const optimizeImageServer = async (
 			`Uploading file for server optimization: format=${options.format}, sourceFormat=${sourceFormat}`,
 		);
 
+		// Log the FormData entries for debugging
+		console.log("FormData entries:");
+		for (const pair of formData.entries()) {
+			console.log(`- ${pair[0]}: ${pair[1]}`);
+		}
+
 		// Send the request to the server endpoint
 		const response = await fetch(`${API_BASE_URL}/upload/optimize`, {
 			method: "POST",
