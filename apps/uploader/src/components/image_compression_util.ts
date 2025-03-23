@@ -1,20 +1,9 @@
 import imageCompression from "browser-image-compression";
 import { blobToWebP } from "webp-converter-browser";
-import { heicTo } from "heic-to";
-// Import CSP version for Content Security Policy environments
-import { heicTo as heicToCsp } from "heic-to/csp";
+import convert from "heic-convert/browser";
 import { API_BASE_URL } from "./constants";
 
 const DEFAULT_QUALITY = 75;
-
-// Check if we're in a CSP-restricted environment
-// This is a simple check that can be expanded based on your actual detection needs
-// or made configurable through environment variables
-export let USE_CSP_MODE = true; // Set to true to use CSP-compatible version
-
-export const setCSPMode = (enabled: boolean) => {
-	USE_CSP_MODE = enabled;
-};
 
 export type CompressOptions = {
 	maxSizeMB: number;
@@ -216,17 +205,19 @@ export const convertHeicToJpeg = async (
 		// Skip double-checking - we trust the caller to only send HEIC files
 		// This prevents circular logic where we detect HEIC then fail on conversion
 
-		const jpeg = await (USE_CSP_MODE
-			? heicToCsp({
-					blob: file,
-					type: "image/jpeg",
-					quality: quality / 100,
-				})
-			: heicTo({
-					blob: file,
-					type: "image/jpeg",
-					quality: quality / 100,
-				}));
+		// Read the file as ArrayBuffer
+		const arrayBuffer = await file.arrayBuffer();
+
+		// heic-convert/browser uses native browser capabilities for conversion
+		// It takes an ArrayBuffer and returns a converted Buffer
+		const jpegBuffer = await convert({
+			buffer: new Uint8Array(arrayBuffer),
+			format: "JPEG",
+			quality: quality / 100,
+		});
+
+		// Convert the result to a Blob
+		const jpeg = new Blob([jpegBuffer], { type: "image/jpeg" });
 
 		// Validate that we actually got a result
 		if (!jpeg || jpeg.size === 0) {
