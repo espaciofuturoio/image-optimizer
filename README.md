@@ -3,7 +3,7 @@
 A powerful image optimization service that efficiently compresses and converts images to modern formats like WebP and AVIF, reducing file sizes while maintaining visual quality.
 
 <div align="center">
-  <img src="https://github.com/espaciofuturoio/react-snow-forest/blob/2325260381606dd5d4a19047dc654e050b47be4e/demo.gif" alt="Snow Forest Animation">
+  <img src="https://github.com/espaciofuturoio/image-optimizer/blob/main/DEMO.gif" alt="Video demostration">
 </div>
 
 [Live Demo](https://tinyimage.rubenabix.com/)
