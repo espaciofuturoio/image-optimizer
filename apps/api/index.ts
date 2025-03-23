@@ -3,8 +3,10 @@ import { swagger } from "@elysiajs/swagger";
 import { Elysia, file } from "elysia";
 import { uploadRoutes } from "./routes/upload";
 import { ENV } from "./env";
+import { compression } from "./libs/compress/index";
 
 const app = new Elysia()
+	.use(compression)
 	.use(cors())
 	.use(
 		swagger({
